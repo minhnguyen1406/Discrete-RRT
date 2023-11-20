@@ -29,15 +29,15 @@ void plan(int planner) {
     std::vector<double> start;
     std::vector<double> goal;
 
-    double cx, cy, r = 10, 10, 5;
+    double cx = 10, cy = 10, r = 9;
     
-    for (i = 0; i < 8; i++){
+    for (int i = 0; i < 8; i++){
         double angle = i*PI/4;
-        start.pushback(cx + (r*cos(angle)));
-        start.pushback(cy + (r*sin(angle)));
+        start.push_back(cx + (r*cos(angle)));
+        start.push_back(cy + (r*sin(angle)));
 
-        goal.pushback(cx + (r*cos(PI + angle)));
-        goal.pushback(cy + (r*sin(PI + angle)));
+        goal.push_back(cx + (r*cos(PI + angle)));
+        goal.push_back(cy + (r*sin(PI + angle)));
     }
     
     startState = start;

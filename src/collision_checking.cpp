@@ -1,4 +1,6 @@
 #include <vector>
+#include <limits>
+#include <math.h>
 #include "collision_checking.h"
 
 
