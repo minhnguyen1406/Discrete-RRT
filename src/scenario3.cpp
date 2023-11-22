@@ -1,94 +1,188 @@
-#include <iostream>
 
+#include <iostream>
+#include <cmath>
+
+#include "CollisionChecking.h"
+#include "DRRT.h"
+#include <ompl/base/SpaceInformation.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
+#include <ompl/base/SpaceInformation.h>
+#include <ompl/base/spaces/RealVectorStateSpace.h>
+#include <ompl/geometric/planners/prm/PRM.h>
+#include <ompl/geometric/SimpleSetup.h>
+#include <ompl/geometric/planners/prm/PRM.h>
 #include <ompl/geometric/SimpleSetup.h>
 #include <ompl/geometric/planners/rrt/RRT.h>
-#include "collision_checking.h"
-#include <math.h> 
+#include <ompl/config.h>
+#include <ompl/tools/benchmark/Benchmark.h>
 
 #define PI 3.14159265
 
-void plan(int planner) {
-    const double robotRadius = 2;
-    const double timeout = 60;
+const double radius = 2;
 
-    int robotCount = 4;
+double distanceBetween(const vector<double> &point1, const vector<double> &point2) {
+    return sqrt(pow(point1[0] - point2[0], 2) + pow(point1[1] - point2[1], 2));
+}
 
-    // create state space and bounds
-    // state is represented by {x1, y1, x2, y2, ... x{robotCount}, y{robotCount}}
-    auto stateSpace = std::make_shared<ob::RealVectorStateSpace>(robotCount*2);
-    ob::RealVectorBounds bounds(robotCount*2);
-    bounds.setLow(0);
-    bounds.setHigh(20);
-    stateSpace->setBounds(bounds);
+bool isGroupStateCollisionFree(const ob::State *groupState, const vector<Rectangle> & barriers) {
+    auto compoundState = groupState->as<ob::CompoundState>();
+    vector<vector<double>> positions;
 
-    // create simple setup object
-    og::SimpleSetup setup(stateSpace);
-
-    // set start and goal states
-    ob::ScopedState<> startState(stateSpace), goalState(stateSpace);
-
-    std::vector<double> start;
-    std::vector<double> goal;
-
-    double cx = 10, cy = 10, r = 9;
-    
-    for (int i = 0; i < robotCount; i++){
-        double angle = (2 * i * PI) / float(robotCount);
-        start.push_back(cx + (r*cos(angle)));
-        start.push_back(cy + (r*sin(angle)));
-
-        goal.push_back(cx + (r*cos(PI + angle)));
-        goal.push_back(cy + (r*sin(PI + angle)));
+    for (int robotIndex = 0; robotIndex < 4; ++robotIndex) {
+        auto robotState = compoundState->as<ob::RealVectorStateSpace::StateType>(robotIndex);
+        double posX = robotState->values[0];
+        double posY = robotState->values[1];
+        if (!isValidCircle(posX, posY, radius, barriers)) return false;
+        positions.emplace_back(vector<double>{posX, posY});
     }
-    
-    startState = start;
-    goalState = goal;
-    setup.setStartAndGoalStates(startState, goalState, 0.1);
 
-    std::vector<Rectangle> obstacles = {};
-
-    // set state validity checker
-    auto svc = [&robotRadius, &obstacles, &robotCount](const ob::State *state) {
-        auto st = state->as<ob::RealVectorStateSpace::StateType>()->values;
-        for (int i = 0; i < robotCount*2; i += 2) {
-            auto robotX = st[i], robotY = st[i + 1];
-            // check for collisions with obstacles
-            if (distanceToNearestObstacle(obstacles, robotX, robotY) < robotRadius)
-                return false;
-            // check for collisions with other robots
-            for (int j = i + 2; j < robotCount*2; j += 2) {
-                auto otherX = st[j], otherY = st[j + 1];
-                if (sqrt(pow(robotX - otherX, 2) + pow(robotY - otherY, 2)) < 2 * robotRadius)
-                    return false;
-            }
+    for (int i = 0; i < 4; ++i) {
+        for (int j = i + 1; j < 4; ++j) {
+            double dist = distanceBetween(positions[i], positions[j]);
+            if (dist <= 2 * radius) return false;
         }
-        return true;
-    };
-    setup.setStateValidityChecker(svc);
+    }
+    return true;
+}
+
+bool isSingleRobotStateValid(const ob::State *robotState, const vector<Rectangle> & barriers) {
+    auto singleState = robotState->as<ob::RealVectorStateSpace::StateType>();
+    return isValidCircle(singleState->values[0], singleState->values[1], radius, barriers);
+}
+
+og::SimpleSetup createRobots(vector<Rectangle> & obstacles,
+        double** starts, double** goals)
+{
+    ob::StateSpacePtr compoundSpace;
+
+    for (int i = 0; i < 4; i++)
+    {
+        auto r2 = make_shared<ob::RealVectorStateSpace>(2);
+        ob::RealVectorBounds bounds(2);
+        bounds.setLow(-5);
+        bounds.setHigh(25);
+        r2->setBounds(bounds);
+        compoundSpace = compoundSpace + r2;
+    }
+
+    og::SimpleSetup setup(compoundSpace);
+
+    setup.setStateValidityChecker(
+        [obstacles](const ob::State *state) { return isGroupStateCollisionFree(state, obstacles); });
+
+    ob::ScopedState<> start(compoundSpace);
+
+    ob::ScopedState<> goal(compoundSpace);
+
+    for (int i = 0; i < 2 * 4; i++)
+    {
+        start[i] = starts[i / 2][i % 2];
+        goal[i] = goals[i / 2][i % 2];
+        cerr << start[i] << endl;
+    }
+
+    setup.setStartAndGoalStates(start, goal, 0.20);
+    return setup;
+}
+
+PRMptr setupPRM(vector<Rectangle> & obstacles, double** starts, double** goals)
+{
+    auto space(make_shared<ob::RealVectorStateSpace>(2));
+    ob::RealVectorBounds bounds(2);
+
+    bounds.setLow(-5);
+    bounds.setHigh(25);
+
+    space->setBounds(bounds);
+    og::SimpleSetup setup(space);
+    setup.setStateValidityChecker(
+        [obstacles](const ob::State *state) { return isSingleRobotStateValid(state, obstacles); });
+    ob::ScopedState<> start(space);
+    ob::ScopedState<> goal(space);
+    start[0] = starts[0][0];
+    start[1] = starts[0][1];
+    goal[0] = goals[0][0];
+    goal[1] = goals[0][1];
+    setup.setStartAndGoalStates(start, goal);
+    PRMptr PRMplanner(make_shared<og::PRM>(setup.getSpaceInformation()));
+    setup.setPlanner(PRMplanner);
+    setup.setup();
+    ob::PlannerStatus solved = setup.solve(10.0);
+
+    if (!solved)
+    {
+        cerr << "No valid PRM roadmap found" << endl;
+
+    }
+
+    return PRMplanner;
+}
+
+void plan(og::SimpleSetup & setup, const PRMptr& PRMplanner, int planner)
+{
 
     switch (planner) {
         case 1:
-            setup.setPlanner(std::make_shared<og::RRT>(setup.getSpaceInformation()));
+            setup.setPlanner(make_shared<og::RRT>(setup.getSpaceInformation()));
+            break;
+        case 2:
+            setup.setPlanner(make_shared<og::DRRT>(setup.getSpaceInformation(), 4, PRMplanner));
             break;
     }
 
-    auto status = setup.solve(timeout);
-    std::cout << status.asString() << std::endl;
+    setup.setup();
+    ob::PlannerStatus solved;
 
-    if (status) {
-        setup.simplifySolution();
-        setup.getSolutionPath().printAsMatrix(std::cout);
+    solved = setup.solve(1800.0);
+
+
+    if (solved)
+    {
+
+        cout << "Found solution:" << endl;
+        setup.getSolutionPath().printAsMatrix(cout);
     }
+    else
+        cout << "No solution found" << endl;
 }
 
-int main() {
+int main(int /* argc */, char ** /* argv */)
+{
+    vector<Rectangle> obstacles;
+    double cx = 10, cy = 10, r = 9;
+
+    double** starts = new double*[4];
+    double** goals = new double*[4];
+
+    for (int i = 0; i < 4; ++i) {
+        double angle = (2 * i * PI) / float(4);
+        starts[i] = new double[2];
+        starts[i][0] = cx + (r*cos(angle));
+        starts[i][1] = cy + (r*sin(angle));
+
+        goals[i] = new double[2];
+        goals[i][0] = cx + (r*cos(PI + angle));
+        goals[i][1] = cy + (r*sin(PI + angle));
+    }
+
     int planner;
     do {
-        std::cout << "Choose a planner: " << std::endl;
-        std::cout << " (1) RRT" << std::endl;
-        std::cout << " (2) dRRT" << std::endl;
-        std::cin >> planner;
+        cout << "Choose a planner: " << endl;
+        cout << " (1) RRT" << endl;
+        cout << " (2) dRRT" << endl;
+        cin >> planner;
     } while (planner < 1 || planner > 2);
-    plan(planner);
+
+
+    PRMptr PRMplanner = setupPRM(obstacles, starts, goals);
+
+    auto setup = createRobots(obstacles, starts, goals);
+    plan(setup, PRMplanner, planner);
+    for (int i = 0; i < 4; ++i) {
+        delete[] starts[i]; // Deallocate each double array
+        delete[] goals[i];
+    }
+    delete[] starts;
+    delete[] goals;
+    return 0;
 }

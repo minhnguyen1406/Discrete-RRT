@@ -5,17 +5,17 @@
 
 using namespace std;
 
-double distanceToNearestObstacle(const std::vector<Rectangle> &obstacles, double x, double y) {
-    double ans = std::numeric_limits<double>::max();
+double distanceToNearestObstacle(const vector<Rectangle> &obstacles, double x, double y) {
+    double ans = numeric_limits<double>::max();
     for (auto o : obstacles) {
-        auto closestX = std::max(o.x, std::min(x, o.x + o.width));
-        auto closestY = std::max(o.y, std::min(y, o.y + o.height));
-        ans = std::min(ans, sqrt(pow(x - closestX, 2) + pow(y - closestY, 2)));
+        auto closestX = max(o.x, min(x, o.x + o.width));
+        auto closestY = max(o.y, min(y, o.y + o.height));
+        ans = min(ans, sqrt(pow(x - closestX, 2) + pow(y - closestY, 2)));
     }
     return ans;
 }
 
-bool isValidCircle(double circleX, double circleY, double radius, const std::vector<Rectangle> &obstacles)
+bool isValidCircle(double circleX, double circleY, double radius, const vector<Rectangle> &obstacles)
 {
     for (const auto& obstacle : obstacles) {
         // Manually calculate the nearest X and Y coordinates on the obstacle

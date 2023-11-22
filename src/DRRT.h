@@ -16,14 +16,7 @@
 using namespace std;
 namespace ob = ompl::base;
 namespace og = ompl::geometric;
-using PRMptr = std::shared_ptr<og::PRM>;
-
-namespace constants
-{
-    const double ROBOT_RADIUS = 0.1;
-
-} // namespace constants
-
+using PRMptr = shared_ptr<og::PRM>;
 
 namespace ompl
 {
@@ -67,7 +60,7 @@ namespace ompl
                 return si_->distance(a->state, b->state);
             }
 
-            std::shared_ptr<NearestNeighbors<Motion *>> nn_;
+            shared_ptr<NearestNeighbors<Motion *>> nn_;
 
             void freeMemory();
 
@@ -86,21 +79,27 @@ namespace ompl
 
             //og::PRM::Graph g_;
             Motion *lastGoalMotion_{nullptr};
-            std::vector<Motion*> intermediateMotions;
+            vector<Motion*> intermediateMotions;
 
             void oracle(ob::RealVectorStateSpace::StateType*& qrand, ob::RealVectorStateSpace::StateType*& qnear, ob::RealVectorStateSpace::StateType*& qnew, const og::PRM::Graph& g);
 
             bool isCollisionFreePath(const ob::State* start, const ob::State* end, const ob::State* otherRobotStartState);
 
-            std::vector<int> localConnector(const ob::State* start, const ob::State* end);
+            vector<int> localConnector(const ob::State* start, const ob::State* end);
 
             double euclideanDistance(const ob::RealVectorStateSpace::StateType* state1, const ob::RealVectorStateSpace::StateType* state2, int dim);
-            void moveRobotsToNearestInitialStates(const og::PRM::Graph& g, const base::State* state);
-            ob::RealVectorStateSpace::StateType* findNearestStateInGraph(const og::PRM::Graph& g,ob::RealVectorStateSpace::StateType* queryState);
-            void updateRobotState(ob::RealVectorStateSpace::StateType* robotState,ob::RealVectorStateSpace::StateType* newState);
-            Motion* expand(Motion* nearestMotion, base::State* randomState, base::State* newState, const og::PRM::Graph& g);
-            std::vector<Motion*> constructSolutionPath(Motion* goalMotion);
 
+            void moveRobotsToNearestInitialStates(const og::PRM::Graph& g, const base::State* state);
+
+            ob::RealVectorStateSpace::StateType* findNearestStateInGraph(const og::PRM::Graph& g,ob::RealVectorStateSpace::StateType* queryState);
+
+            void updateRobotState(ob::RealVectorStateSpace::StateType* robotState,ob::RealVectorStateSpace::StateType* newState);
+
+            Motion* expand(Motion* nearestMotion, base::State* randomState, base::State* newState, const og::PRM::Graph& g);
+
+            vector<Motion*> constructSolutionPath(Motion* goalMotion);
+
+            bool topoSort(int robot, const vector<vector<int>>& adjacencyList, vector<bool>& onStack, vector<bool>& visited, vector<int>& sortedOrder);
         };
 
     }  // namespace geometric

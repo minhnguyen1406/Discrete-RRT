@@ -13,7 +13,7 @@
 
 
 og::DRRT::DRRT(const base::SpaceInformationPtr &si, int robotCount, const PRMptr& PRMplanner):
-    base::Planner(si, "DRRT"), robotCount_(robotCount), PRMplanner_(std::move(PRMplanner))
+    base::Planner(si, "DRRT"), robotCount_(robotCount), PRMplanner_(move(PRMplanner))
 {
     specs_.directed = true;
 }
@@ -22,7 +22,7 @@ void og::DRRT::freeMemory()
 {
     if (nn_)
     {
-        std::vector<Motion *> motions;
+        vector<Motion *> motions;
         nn_->list(motions);
         for (auto &motion : motions)
         {
@@ -60,7 +60,6 @@ void og::DRRT::setup()
 {
     Planner::setup();
     tools::SelfConfig sc(si_, getName());
-    //sc.configurePlannerRange(maxDistance_);
 
     if (!nn_)
         nn_.reset(tools::SelfConfig::getDefaultNearestNeighbors<Motion *>(this));
@@ -69,9 +68,7 @@ void og::DRRT::setup()
 
 
 
-double og::DRRT::euclideanDistance(const ob::RealVectorStateSpace::StateType *state1,
-                                                const ob::RealVectorStateSpace::StateType *state2,
-                                                int dim) {
+double og::DRRT::euclideanDistance(const ob::RealVectorStateSpace::StateType *state1, const ob::RealVectorStateSpace::StateType *state2, int dim) {
     double sum = 0;
     for (int i = 0; i < dim; i++)
         sum += pow(state1->values[i] - state2->values[i], 2);
@@ -79,8 +76,7 @@ double og::DRRT::euclideanDistance(const ob::RealVectorStateSpace::StateType *st
 }
 
 
-
-// Method to expand the tree towards a given random state
+// Expand the tree towards a given random state
 og::DRRT::Motion* og::DRRT::expand(Motion* nearestMotion, base::State* randomState, base::State* newState, const og::PRM::Graph& g) {
 
     auto nearestState = nearestMotion->state;
@@ -108,7 +104,7 @@ void og::DRRT::moveRobotsToNearestInitialStates(const og::PRM::Graph& g, const b
 
     for (int i = 0; i < robotCount_; i++) {
         auto robotState = compoundState->as<ob::RealVectorStateSpace::StateType>(i);
-        double minDist = std::numeric_limits<double>::infinity();
+        double minDist = numeric_limits<double>::infinity();
         ob::RealVectorStateSpace::StateType* closestState = nullptr;
 
         for (auto v : boost::make_iterator_range(vertices(g))) {
@@ -127,8 +123,8 @@ void og::DRRT::moveRobotsToNearestInitialStates(const og::PRM::Graph& g, const b
     }
 }
 
-std::vector<og::DRRT::Motion*> og::DRRT::constructSolutionPath(Motion* goalMotion) {
-    std::vector<Motion*> mpath;
+vector<og::DRRT::Motion*> og::DRRT::constructSolutionPath(Motion* goalMotion) {
+    vector<Motion*> mpath;
     Motion* currentMotion = goalMotion;
     auto tempState = si_->allocState();
     while (currentMotion != nullptr) {
@@ -184,7 +180,7 @@ ob::PlannerStatus og::DRRT::solve(const base::PlannerTerminationCondition &ptc)
 
     Motion *solution = nullptr;
     Motion *approxsol = nullptr;
-    double approxdif = std::numeric_limits<double>::infinity();
+    double approxdif = numeric_limits<double>::infinity();
     auto *rmotion = new Motion(si_);
     base::State *randomState = rmotion->state;
     base::State *newState = si_->allocState();
@@ -229,7 +225,7 @@ ob::PlannerStatus og::DRRT::solve(const base::PlannerTerminationCondition &ptc)
         auto mpath = constructSolutionPath(solution);
 
         /* set the solution path */
-        auto path(std::make_shared<PathGeometric>(si_));
+        auto path(make_shared<PathGeometric>(si_));
         for (int i = mpath.size() - 1; i >= 0; --i)
             path->append(mpath[i]->state);
         pdef_->addSolutionPath(path, approximate, approxdif, getName());
@@ -247,13 +243,14 @@ ob::PlannerStatus og::DRRT::solve(const base::PlannerTerminationCondition &ptc)
 
 }
 
+// Expansion oracle
 void og::DRRT::oracle(ob::RealVectorStateSpace::StateType*& qrand, ob::RealVectorStateSpace::StateType*& qnear, ob::RealVectorStateSpace::StateType*& qnew,
                         const og::PRM::Graph& g)
 {
 
     auto stateMap = boost::get(og::PRM::vertex_state_t(), g);
 
-    double minAngle = std::numeric_limits<double>::infinity();
+    double minAngle = numeric_limits<double>::infinity();
 
     // Iterate over all vertices in the graph to find the vertex that corresponds to qnear.
     for (auto v : boost::make_iterator_range(vertices(g))) {
@@ -270,9 +267,9 @@ void og::DRRT::oracle(ob::RealVectorStateSpace::StateType*& qrand, ob::RealVecto
 
                 // Calculate the angle using the dot product and magnitude of vectors.
                 double dot = dir_qrand[0] * dir_av[0] + dir_qrand[1] * dir_av[1];
-                double mag_qrand = std::sqrt(dir_qrand[0] * dir_qrand[0] + dir_qrand[1] * dir_qrand[1]);
-                double mag_av = std::sqrt(dir_av[0] * dir_av[0] + dir_av[1] * dir_av[1]);
-                double angle = std::acos(dot / (mag_qrand * mag_av));
+                double mag_qrand = sqrt(dir_qrand[0] * dir_qrand[0] + dir_qrand[1] * dir_qrand[1]);
+                double mag_av = sqrt(dir_av[0] * dir_av[0] + dir_av[1] * dir_av[1]);
+                double angle = acos(dot / (mag_qrand * mag_av));
 
                 // Check if this angle is the smallest we have found so far.
                 if (angle < minAngle) {
@@ -286,7 +283,7 @@ void og::DRRT::oracle(ob::RealVectorStateSpace::StateType*& qrand, ob::RealVecto
     }
 
     // If no adjacent state was closer, qnew will not be updated and should be set to nullptr.
-    if (minAngle == std::numeric_limits<double>::max()) {
+    if (minAngle == numeric_limits<double>::max()) {
         qnew = nullptr;
     }
 }
@@ -305,10 +302,10 @@ bool og::DRRT::isCollisionFreePath(const ob::State* start, const ob::State* end,
         auto interpolatedR2State = interpolatedState->as<ob::RealVectorStateSpace::StateType>();
         auto obstacleR2State = obstacleState->as<ob::RealVectorStateSpace::StateType>();
 
-        double distance = std::sqrt(std::pow(interpolatedR2State->values[0] - obstacleR2State->values[0], 2) +
-                                    std::pow(interpolatedR2State->values[1] - obstacleR2State->values[1], 2));
+        double distance = sqrt(pow(interpolatedR2State->values[0] - obstacleR2State->values[0], 2) +
+                                    pow(interpolatedR2State->values[1] - obstacleR2State->values[1], 2));
 
-        if (distance <= 2 * constants::ROBOT_RADIUS) { // Assuming robot and obstacle radius is 0.1
+        if (distance <= 2 * 1) {
             PRMplanner_->getSpaceInformation()->freeState(interpolatedState);
             return false; // Collision detected
         }
@@ -320,14 +317,15 @@ bool og::DRRT::isCollisionFreePath(const ob::State* start, const ob::State* end,
 
 
 
-std::vector<int> og::DRRT::localConnector(const ob::State* start, const ob::State* end) {
+vector<int> og::DRRT::localConnector(const ob::State* start, const ob::State* end) {
     // Initialize the adjacency list for the graph representation
-    std::vector<std::vector<int>> dependencyGraph(robotCount_);
+    vector<vector<int>> dependencyGraph(robotCount_);
+    vector<int> sortedOrder; // This will store the topological sort order of the robots
+    vector<bool> onStack(robotCount_, false), visited(robotCount_, false);
 
     auto compoundStart = start->as<ob::CompoundState>();
     auto compoundEnd = end->as<ob::CompoundState>();
-    std::vector<int> incomingEdgesCount(robotCount_, 0);
-    std::vector<std::vector<int>> graph(robotCount_);
+
     // Build the graph based on collision checks
     for (int robotA = 0; robotA < robotCount_; ++robotA) {
         for (int robotB = 0; robotB < robotCount_; ++robotB) {
@@ -348,41 +346,44 @@ std::vector<int> og::DRRT::localConnector(const ob::State* start, const ob::Stat
         }
     }
 
-   std::queue<int> queue;
-    for (int i = 0; i < robotCount_; ++i) {
-        if (incomingEdgesCount[i] == 0) {
-            queue.push(i);
-        }
-    }
-
-    // Process the queue with topological sort
-    std::vector<int> order;
-    while (!queue.empty()) {
-        int current = queue.front();
-        queue.pop();
-        order.push_back(current);
-
-        for (int dependent : graph[current]) {
-            if (--incomingEdgesCount[dependent] == 0) {
-                queue.push(dependent);
+    for (int robot = 0; robot < robotCount_; ++robot) {
+        if (!visited[robot]) {
+            bool cycleDetected = topoSort(robot, dependencyGraph, onStack, visited, sortedOrder);
+            if (cycleDetected) {
+                return {}; // If a cycle is detected, return an empty vector
             }
         }
     }
 
-    // Step 4: Check for cycles.
-    if (static_cast<int>(order.size()) != robotCount_) {
-        return {};
+    reverse(sortedOrder.begin(), sortedOrder.end()); // reverse to get correct order
+    return sortedOrder;
+}
+
+bool og::DRRT::topoSort(int robot, const vector<vector<int>>& adjacencyList, vector<bool>& onStack, vector<bool>& visited, vector<int>& sortedOrder) {
+    onStack[robot] = true;
+    visited[robot] = true;
+
+    for (int neighbor : adjacencyList[robot]) {
+        if (!visited[neighbor]) {
+            if (topoSort(neighbor, adjacencyList, onStack, visited, sortedOrder)) {
+                return true; // Cycle detected
+            }
+        } else if (onStack[neighbor]) {
+            return true; // Cycle detected
+        }
     }
 
-
-    return order;
+    onStack[robot] = false; // Mark the robot as not on the current DFS path
+    sortedOrder.push_back(robot); // Add the robot to the topological order
+    return false; // No cycle detected
 }
+
 
 void og::DRRT::getPlannerData(base::PlannerData &data) const
 {
     Planner::getPlannerData(data);
 
-    std::vector<Motion *> motions;
+    vector<Motion *> motions;
     if (nn_)
         nn_->list(motions);
 
