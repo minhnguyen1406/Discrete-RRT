@@ -16,17 +16,17 @@ void plan(int planner) {
 
     // create state space and bounds
     // state is represented by {x1, y1, x2, y2, ... x{robotCount}, y{robotCount}}
-    auto stateSpace = std::make_shared<ompl::base::RealVectorStateSpace>(robotCount*2);
-    ompl::base::RealVectorBounds bounds(robotCount*2);
+    auto stateSpace = std::make_shared<ob::RealVectorStateSpace>(robotCount*2);
+    ob::RealVectorBounds bounds(robotCount*2);
     bounds.setLow(0);
     bounds.setHigh(20);
     stateSpace->setBounds(bounds);
 
     // create simple setup object
-    ompl::geometric::SimpleSetup setup(stateSpace);
+    og::SimpleSetup setup(stateSpace);
 
     // set start and goal states
-    ompl::base::ScopedState<> startState(stateSpace), goalState(stateSpace);
+    ob::ScopedState<> startState(stateSpace), goalState(stateSpace);
 
     std::vector<double> start;
     std::vector<double> goal;
@@ -49,8 +49,8 @@ void plan(int planner) {
     std::vector<Rectangle> obstacles = {};
 
     // set state validity checker
-    auto svc = [&robotRadius, &obstacles, &robotCount](const ompl::base::State *state) {
-        auto st = state->as<ompl::base::RealVectorStateSpace::StateType>()->values;
+    auto svc = [&robotRadius, &obstacles, &robotCount](const ob::State *state) {
+        auto st = state->as<ob::RealVectorStateSpace::StateType>()->values;
         for (int i = 0; i < robotCount*2; i += 2) {
             auto robotX = st[i], robotY = st[i + 1];
             // check for collisions with obstacles
@@ -69,7 +69,7 @@ void plan(int planner) {
 
     switch (planner) {
         case 1:
-            setup.setPlanner(std::make_shared<ompl::geometric::RRT>(setup.getSpaceInformation()));
+            setup.setPlanner(std::make_shared<og::RRT>(setup.getSpaceInformation()));
             break;
     }
 
