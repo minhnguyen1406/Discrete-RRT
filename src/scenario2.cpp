@@ -18,7 +18,7 @@
 
 #define PI 3.14159265
 
-const double radius = 1;
+const double radius = 2;
 
 
 double distanceBetween(const vector<double> &point1, const vector<double> &point2) {
@@ -29,7 +29,7 @@ bool isGroupStateCollisionFree(const ob::State *groupState, const vector<Rectang
     auto compoundState = groupState->as<ob::CompoundState>();
     vector<vector<double>> positions;
 
-    for (int robotIndex = 0; robotIndex < 8; ++robotIndex) {
+    for (int robotIndex = 0; robotIndex < 5; ++robotIndex) {
         auto robotState = compoundState->as<ob::RealVectorStateSpace::StateType>(robotIndex);
         double posX = robotState->values[0];
         double posY = robotState->values[1];
@@ -37,8 +37,8 @@ bool isGroupStateCollisionFree(const ob::State *groupState, const vector<Rectang
         positions.emplace_back(vector<double>{posX, posY});
     }
 
-    for (int i = 0; i < 8; ++i) {
-        for (int j = i + 1; j < 8; ++j) {
+    for (int i = 0; i < 5; ++i) {
+        for (int j = i + 1; j < 5; ++j) {
             double dist = distanceBetween(positions[i], positions[j]);
             if (dist <= 2 * radius) return false;
         }
@@ -56,7 +56,7 @@ og::SimpleSetup createRobots(vector<Rectangle> & obstacles,
 {
     ob::StateSpacePtr compoundSpace;
 
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 5; i++)
     {
         auto r2 = make_shared<ob::RealVectorStateSpace>(2);
         ob::RealVectorBounds bounds(2);
@@ -75,7 +75,7 @@ og::SimpleSetup createRobots(vector<Rectangle> & obstacles,
 
     ob::ScopedState<> goal(compoundSpace);
 
-    for (int i = 0; i < 2 * 8; i++)
+    for (int i = 0; i < 2 * 5; i++)
     {
         start[i] = starts[i / 2][i % 2];
         goal[i] = goals[i / 2][i % 2];
@@ -127,14 +127,14 @@ void plan(og::SimpleSetup & setup, const PRMptr& PRMplanner, int planner)
             setup.setPlanner(make_shared<og::RRT>(setup.getSpaceInformation()));
             break;
         case 2:
-            setup.setPlanner(make_shared<og::DRRT>(setup.getSpaceInformation(), 8, PRMplanner));
+            setup.setPlanner(make_shared<og::DRRT>(setup.getSpaceInformation(), 5, PRMplanner));
             break;
     }
 
     setup.setup();
     ob::PlannerStatus solved;
 
-    solved = setup.solve(3600.0);
+    solved = setup.solve(900.0);
 
 
     if (solved)
@@ -167,11 +167,11 @@ int main(int /* argc */, char ** /* argv */)
     vector<Rectangle> obstacles;
     double cx = 10, cy = 10, r = 9;
     
-    double** starts = new double*[8];
-    double** goals = new double*[8];
+    double** starts = new double*[5];
+    double** goals = new double*[5];
 
-    for (int i = 0; i < 8; ++i) {
-        double angle = i*PI/4;
+    for (int i = 0; i < 5; ++i) {
+        double angle = (2 * i * PI) / float(5);
         starts[i] = new double[2];
         starts[i][0] = cx + (r*cos(angle));
         starts[i][1] = cy + (r*sin(angle));
@@ -208,7 +208,7 @@ int main(int /* argc */, char ** /* argv */)
         benchmark(setup, PRMplanner);
     else
         cerr << "How did you get here? Invalid choice." << endl;
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < 5; ++i) {
         delete[] starts[i]; // Deallocate each double array
         delete[] goals[i];
     }
