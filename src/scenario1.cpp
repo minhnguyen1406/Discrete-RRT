@@ -61,12 +61,8 @@ bool isSingleRobotStateValid(const ob::State *robotState, const vector<Rectangle
 
 void makeObstacles(vector<Rectangle> & obstacles)
 {
-    createObstacle(obstacles, 0, -1, 20,  1);
-    createObstacle(obstacles, -1, 0,  1,  20);
-    createObstacle(obstacles, 0,  20, 20,  1);
-    createObstacle(obstacles, 20, 0,  1,   20);
-    createObstacle(obstacles, 0,  5,  7.5, 10);
-    createObstacle(obstacles,12.5, 5,  7.5, 10);
+    createObstacle(obstacles, 0,  5,  7, 10);
+    createObstacle(obstacles,12.5, 5,  7, 10);
 }
 
 og::SimpleSetup createRobots(vector<Rectangle> & obstacles,
@@ -92,14 +88,14 @@ og::SimpleSetup createRobots(vector<Rectangle> & obstacles,
     ob::ScopedState<> start(compoundSpace);
 
     ob::ScopedState<> goal(compoundSpace);
-    
+
     for (int i = 0; i < 2 * 4; i++)
     {
         start[i] = starts[i / 2][i % 2];
         goal[i] = goals[i / 2][i % 2];
     }
 
-    setup.setStartAndGoalStates(start, goal, 0.20);
+    setup.setStartAndGoalStates(start, goal, 4);
     return setup;
 }
 
@@ -130,7 +126,7 @@ PRMptr setupPRM(vector<Rectangle> & obstacles, double** starts, double** goals)
     if (!solved)
     {
         cerr << "No valid PRM roadmap found" << endl;
-        
+
     }
 
     return PRMplanner;
@@ -151,7 +147,7 @@ void plan(og::SimpleSetup & setup, const PRMptr& PRMplanner, int planner)
     setup.setup();
     ob::PlannerStatus solved;
 
-    solved = setup.solve(600.0);
+    solved = setup.solve(300.0);
 
 
     if (solved)
@@ -195,6 +191,15 @@ int main(int /* argc */, char ** /* argv */)
     goals[2] = new double[2]{17.5, 2.5};
     goals[3] = new double[2]{2.5, 2.5};
 
+
+//    starts[0] = new double[2]{0.15, 1.15};
+//    starts[1] = new double[2]{1.15, 1.15};
+//    starts[2] = new double[2]{0.15, 0.15};
+//    starts[3] = new double[2]{1.15, 0.15};
+//    goals[0] = new double[2]{1.15, 0.15};
+//    goals[1] = new double[2]{0.15, 0.15};
+//    goals[2] = new double[2]{1.15, 1.15};
+//    goals[3] = new double[2]{0.15, 1.15};
     int choice;
     do
     {

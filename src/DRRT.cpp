@@ -305,7 +305,7 @@ bool og::DRRT::isCollisionFreePath(const ob::State* start, const ob::State* end,
         double distance = sqrt(pow(interpolatedR2State->values[0] - obstacleR2State->values[0], 2) +
                                     pow(interpolatedR2State->values[1] - obstacleR2State->values[1], 2));
 
-        if (distance <= 2 * 2) {
+        if (distance <= 2 * 1) {
             PRMplanner_->getSpaceInformation()->freeState(interpolatedState);
             return false; // Collision detected
         }

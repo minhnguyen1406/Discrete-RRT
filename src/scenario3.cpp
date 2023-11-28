@@ -81,7 +81,7 @@ og::SimpleSetup createRobots(vector<Rectangle> & obstacles,
         cerr << start[i] << endl;
     }
 
-    setup.setStartAndGoalStates(start, goal, 0.20);
+    setup.setStartAndGoalStates(start, goal, 4);
     return setup;
 }
 

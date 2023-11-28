@@ -169,13 +169,14 @@ int main(int /* argc */, char ** /* argv */)
     
     double** starts = new double*[5];
     double** goals = new double*[5];
-
+    double angelRange = PI * 4 / 5;
     for (int i = 0; i < 5; ++i) {
-        double angle = (2 * i * PI) / float(5);
+        double angle = i * angelRange / (5 - 1) + (PI - angelRange) / 2;
         starts[i] = new double[2];
         starts[i][0] = cx + (r*cos(angle));
         starts[i][1] = cy + (r*sin(angle));
-        
+
+
         goals[i] = new double[2];
         goals[i][0] = cx + (r*cos(PI + angle));
         goals[i][1] = cy + (r*sin(PI + angle));
