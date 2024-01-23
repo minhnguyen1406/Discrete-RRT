@@ -6,7 +6,7 @@ LD_FLAGS=`pkg-config --libs ompl`
 
 # The c++ compiler to invoke
 CXX=c++
-all: scenario1 scenario2 scenario3 scenario4 scenario5 scenario6
+all: scenario1 scenario2 scenario3 scenario4 scenario5
 
 clean:
 	rm -f *.o
@@ -28,7 +28,4 @@ scenario4: scenario4.o DRRT.o CollisionChecking.o
 	$(CXX) $(CXX_FLAGS) $(INCLUDE_FLAGS) -Lsrc/. -o $@ $^ $(LD_FLAGS)
 
 scenario5: scenario5.o DRRT.o CollisionChecking.o
-	$(CXX) $(CXX_FLAGS) $(INCLUDE_FLAGS) -Lsrc/. -o $@ $^ $(LD_FLAGS)
-
-scenario6: scenario6.o DRRT.o CollisionChecking.o
 	$(CXX) $(CXX_FLAGS) $(INCLUDE_FLAGS) -Lsrc/. -o $@ $^ $(LD_FLAGS)
